@@ -1,0 +1,328 @@
+
+<div class="container-fluid background-container">
+    <div class="row">
+        <div class="col-md-12">
+            <ol class="breadcrumb">
+                <li><a [routerLink]="['/home']">TSF2</a></li>
+                <li><a [routerLink]="['/ps-landing']">Post-School Survey Home</a></li>
+                <li class="active" style="color:#5f6869 !important">District List</li>
+            </ol>
+        </div>
+    </div>
+    <div class="row header">
+        <div class="col-md-12" style="border-bottom:1px solid black;border-top:1px solid black;text-align:center;">
+            <h1 style="margin-bottom:0px">Survey Status by District</h1>
+            <h2 style="margin-top:0px">({{leaverYear}} Leaver Year)</h2>
+        </div>
+    </div>
+    <div style="margin:20px">
+        <!-- <div class="col-md-1"></div> -->
+        <div class="col-md-12">
+            <div class="row">
+              <div class="col-md-12" style="padding:10px">
+               
+                  <div class="col-md-3" style="padding:10px">
+                    <!-- <label for="leaver-year-dropdown"><h3>Select a leaver year:</h3></label> -->
+                    <h3 style="font-family:Arial, Helvetica, sans-serif">Select a Leaver Year</h3>
+                    <kendo-dropdownlist id="leaver-year-dropdown"
+                                        style="font-size:14px;width:150px;"
+                                        [data]="leaverYears"
+                                        [value]="leaverYear"
+                                        (selectionChange)="onLYearChange($event)">
+                    </kendo-dropdownlist>
+                  </div>
+
+                  <div class="col-md-4" style="text-align: center;padding:5px" *ngIf="showLink">
+                    <div style="display:inline-block;margin-top:25px">
+                      <div *ngIf="downloadingRawData" class="loader"></div>
+                      <button *ngIf="isAdmin||isDistrict" class="btn btn-primary btn-sm" style="margin:5px"
+                        id="btnDownloadExtractStatewide" type="submit" (click)="getExcelExtractReportV2()">Download Raw Data Spreadsheet</button>
+                    </div>
+
+                  </div>
+                  <div class="col-md-5" style="text-align: center;padding:5px">
+                    <div style="display:inline-block;margin-top:25px">
+                      <div *ngIf="downloadingContactReport" class="loader"></div>
+                    <button class="btn btn-primary btn-sm" style="margin:5px" id="btnDownloadExtract" type="submit" (click)="getContactRateReportDistList()">Download Survey Status by District Spreadsheet</button>
+                    </div>
+                  </div>
+                </div>
+            </div>
+            <!-- <div class="row">
+              <div class="col-md-12" style="padding:10px">
+                <div class="buttonwrapper">
+                  <h3 *ngIf="isDistrict || isAdmin" for="searchssid" class="control-label" style="padding:3px">Search By SSID:</h3>
+                  <div>
+                    <form class="form-inline mr-auto">
+                      <input  class="searchBox form-control mr-sm-2" id="searchssid" #searchssid type="text" placeholder="SSID" aria-label="SSID">
+                      <button class="ssidSearch" type="submit" (click)="doSsidSearch(searchssid.value)" >Search</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div> -->
+
+
+          
+
+            <div *ngIf="isGridDataAvailable == true; then datablock else nodatablock"></div>
+          
+            <ng-template #nodatablock>
+                    <div style="text-align:center">
+                      <div style="margin:0px auto" class="lds-dual-ring"></div>
+                        <h2>Loading...</h2>
+                    </div>
+      
+            </ng-template>
+            <div class="row-fluid" style="margin:20px">
+              <div class="col-md-12">
+                <ng-template #datablock>
+                <kendo-grid [data]="finalGridData"
+                            [loading] = "!this.finalGridData"                            
+                            [filterable]="true"
+                            [loading] ="!this.gridData"
+                            [filter]="state.filter"
+                            [scrollable]= "'none'"
+                            style="font-size:15px"
+                            (dataStateChange)="dataStateChange($event)"
+                            [sortable]="{ allowUnsort: true, mode: 'single' }"
+                            [sort]="sort"
+                            (sortChange)="sortChange($event)"
+                            >
+                  <!-- NARROW -->
+                  <kendo-grid-column media="(max-width: 767px)">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <table class="kendo-data-table">
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">District</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">
+                            <span *ngIf="showLink && dataItem.districtName !== 'Totals:'"><a [routerLink]="['/ps-schools-list',  leaverYear, dataItem.districtAgencyId]">{{dataItem.districtName}}</a></span>
+                            <span *ngIf="!showLink && dataItem.districtName !== 'Totals:'">{{dataItem.districtName}}</span>
+                            <span *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtName}}</span>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Leaver Survey List</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">
+                            <div *ngIf="dataItem.isVerified === true && dataItem.districtName !== 'Totals:'" style="border:none;">Verified</div>
+                            <div *ngIf="dataItem.isVerified === false && dataItem.districtName !== 'Totals:'" style="border:none;">Needs Review</div>
+                            <div *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtAgencyId}}</div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Progress</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">
+                            <div class="w3-light-grey w3-round">
+                              <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                              <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                              <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) < 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                              <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 0 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                              <span class="w3-round w3-container" *ngIf="dataItem.districtName === 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Contact Rate</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{getPercent(dataItem.contactRate)}}%</td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Response Rate</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{getPercent(dataItem.responseRate)}}%</td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Not Started</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{dataItem.notStartedCount}}</td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Started</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{dataItem.startedCount}}</td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Finished</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{dataItem.finishedCount}}</td>
+                        </tr>
+                        <tr>
+                          <td class="kendo-data-legend" width="50%" style="font-weight:bold;padding-top:2px;">Total</td>
+                          <td class="kendo-data-element" width="50%" style="text-align:center;padding-top:2px;">{{dataItem.totalCount}}</td>
+                        </tr>
+                      </table>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <!-- MEDIUM -->
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="districtName"
+                                     title="District"
+                                     [filterable]="true"
+                                     [headerStyle]="{'width': '24%', 'font-size':' 10px', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '24%', 'font-size': '12px', 'text-align':'left'}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <span *ngIf="showLink && dataItem.districtName !== 'Totals:'"><a [routerLink]="['/ps-schools-list',  leaverYear, dataItem.districtAgencyId]">{{dataItem.districtName}}</a></span>
+                      <span *ngIf="!showLink && dataItem.districtName !== 'Totals:'">{{dataItem.districtName}}</span>
+                      <span *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtName}}</span>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     title="Leaver Survey List"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'center'}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <div *ngIf="dataItem.isVerified === true && dataItem.districtName !== 'Totals:'" style="border:none;">Verified</div>
+                      <div *ngIf="dataItem.isVerified === false && dataItem.districtName !== 'Totals:'" style="border:none;">Needs Review</div>
+                      <div *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtAgencyId}}</div>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     title="Progress"
+                                     field="progress"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '13%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top'  }"
+                                     [style]="{'width': '13%', 'font-size': '12px', 'text-align':'left'}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <div class="w3-light-grey w3-round">
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) < 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 0 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.districtName === 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                      </div>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="contactRate"
+                                     title="Contact Rate"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"
+                                     format="{0:p2}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="responseRate"
+                                     title="Response Rate"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"
+                                     format="{0:p2}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="notStartedCount"
+                                     title="Not Started"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="startedCount"
+                                     title="Started"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="finishedCount"
+                                     title="Finished"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 768px) and (max-width:991px)"
+                                     field="totalCount"
+                                     title="Total"
+                                     [filterable]="false"
+                                     [headerStyle]="{'width': '9%', 'font-size':' 10px', 'text-align':'center', 'white-space':'normal', 'vertical-align':'top' }"
+                                     [style]="{'width': '9%', 'font-size': '12px', 'text-align':'right'}"></kendo-grid-column>
+                  <!-- WIDE -->
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="districtName"
+                                     title="District"
+                                     [filterable]="true"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '24%', 'text-align': 'left'}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <span *ngIf="showLink && dataItem.districtName !== 'Totals:'"><a [routerLink]="['/ps-schools-list',  leaverYear, dataItem.districtAgencyId]">{{dataItem.districtName}}</a></span>
+                      <span *ngIf="!showLink && dataItem.districtName !== 'Totals:'">{{dataItem.districtName}}</span>
+                      <span *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtName}}</span>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     title="Leaver Survey List"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'center'}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <div *ngIf="dataItem.isVerified === true && dataItem.districtName !== 'Totals:'" style="border:none;">Verified</div>
+                      <div *ngIf="dataItem.isVerified === false && dataItem.districtName !== 'Totals:'" style="border:none;">Needs Review</div>
+                      <div *ngIf="dataItem.districtName === 'Totals:'">{{dataItem.districtAgencyId}}</div>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     title="Progress"
+                                     field="progress"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [filterable]="false"
+                                     [style]="{'width': '13%', 'text-align': 'left'}"
+                                     format="{0:p2}">
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                      <div class="w3-light-grey w3-round">
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) === 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount !== 0 && getProgressValue(dataItem.progress) < 100 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.totalCount === 0 && getProgressValue(dataItem.progress) === 0 && dataItem.districtName !== 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">N/A</span>
+                        <span class="w3-round w3-container" *ngIf="dataItem.districtName === 'Totals:'" [ngStyle]="getMyStyles(dataItem.progress, dataItem.totalCount)">{{getProgressValue(dataItem.progress)}}%</span>
+                      </div>
+                    </ng-template>
+                  </kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="contactRate"
+                                     title="Contact Rate"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:p2}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="responseRate"
+                                     title="Response Rate"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:p2}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="notStartedCount"
+                                     title="Not Started"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:n0}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="startedCount"
+                                     title="Started"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:n0}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="finishedCount"
+                                     title="Finished"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:n0}"></kendo-grid-column>
+                  <kendo-grid-column media="(min-width: 992px)"
+                                     field="totalCount"
+                                     title="Total"
+                                     [filterable]="false"
+                                     [headerStyle]="headerColorStylePrimary"
+                                     [style]="{'width': '9%', 'text-align': 'right'}"
+                                     format="{0:n0}"></kendo-grid-column>
+                </kendo-grid>
+                </ng-template>
+                <div class="k-grid k-widget k-header" style="padding: 5px">
+                  <span class="kendo-data-element"><b>State Progress Total:</b> {{getProgressValue(stateTotal)}}%</span>
+                </div>
+              </div>
+              
+            </div>
+        </div>
+        <!-- <div class="col-md-1"></div> -->
+  </div>
+    <div class="row-fluid">
+        <div class="col-md-12" style="padding-top:20px;text-align:right;">
+            <tsf-scroll></tsf-scroll>
+        </div>
+    </div>
+
+    <tsf-footer></tsf-footer>
+</div>

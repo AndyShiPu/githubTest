@@ -1,0 +1,85 @@
+<div class="container-fluid background-container">
+    <div class="row">
+        <div class="col-md-12">
+            <ol class="breadcrumb" style="background-color: #ececec;">
+                <li><a [routerLink]="['/home']">TSF2</a></li>
+                <li class="active" style="color:#5f6869 !important">Manage Agencies</li>
+            </ol>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 title">
+            <h1>{{title}}</h1>
+        </div>
+    </div>
+    <div class="row">
+        <!-- <div class="col-md-12" style="margin-bottom:25px;text-align:center;">
+            <div style="margin-bottom:15px;">Use the table below to add, edit, and delete TSF2 user accounts for your assigned agency.</div>
+            <div>To update a username or agency affiliation, please <a href="mailto:ccts@seattleu.edu">email CCTS at ccts@seattleu.edu</a>.</div>
+        </div> -->
+
+        <div class="col-md-12" style="margin-bottom:15px;">
+            <div class="btn btn-sm secondary-button" style="width:120px;margin-right:25px;" (click)="addHandler()">Add
+                New Agency</div>
+            <a class="btn btn-primary btn-sm" (click)="getExtract()">Download Agency List</a>
+        </div>
+
+        <div class="col-md-12 table-responsive">
+            <kendo-grid [data]="gridData" (add)="addHandler()" (edit)="editHandler($event)"
+                (remove)="removeHandler($event)" [skip]="state.skip" [filterable]="true" [sortable]="true"
+                [pageSize]="state.take" [sort]="state.sort" [scrollable]="true"
+                [pageable]="{buttonCount: 5, pageSizes: true}" [filter]="state.filter"
+                (dataStateChange)="dataStateChange($event)">
+
+                <kendo-grid-column media="(min-width: 576px)" field="AgencyCode" title="Agency Code"
+                    width="100px"></kendo-grid-column>
+                <kendo-grid-column media="(min-width: 768px)" field="AgencyName" title="Agency Name"
+                    width="125px"></kendo-grid-column>
+                <kendo-grid-column media="(min-width: 576px)" field="County" title="County"
+                    width="125px"></kendo-grid-column>
+                <kendo-grid-command-column width="75px" [headerStyle]="{'text-align':  'center' }"
+                    [style]="{'text-align':  'center' }">
+                    <ng-template kendoGridHeaderTemplate>
+                        <span>Edit</span>
+                    </ng-template>
+                    <ng-template kendoGridCellTemplate>
+                        <div kendoGridEditCommand>Edit</div>
+                    </ng-template>
+                </kendo-grid-command-column>
+                <kendo-grid-column width="90px" [headerStyle]="{'text-align':  'center', 'white-space': 'normal'}"
+                    [style]="{'text-align':  'center' }" *ngIf="isAdmin || isDM">
+                    <ng-template kendoGridHeaderTemplate>
+                        <span>Account Status<br /></span>
+                    </ng-template>
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                        <div kendoGridDeactiveCommand style="text-align:center;" *ngIf="dataItem.isActive">
+                            Active
+                        </div>
+                        <div style="text-align:center;" *ngIf="!dataItem.isActive">
+                            Inactive
+                        </div>
+                    </ng-template>
+                </kendo-grid-column>
+
+                <kendo-grid-column width="90px" [headerStyle]="{'text-align':  'center', 'white-space': 'normal'}"
+                    [style]="{'text-align':  'center'}" *ngIf="isAdmin">
+                    <ng-template kendoGridHeaderTemplate>
+                        <span>Account Action<br /></span>
+                    </ng-template>
+                    <ng-template kendoGridCellTemplate let-dataItem>
+                        <div kendoGridDeactiveCommand style="text-align:center;" *ngIf="isAdmin && dataItem.isActive">
+
+                            <input type="button" value="Deactivate" class="k-button" (click)="deactiveUser(dataItem)">
+                        </div>
+                        <div style="text-align:center;" *ngIf="!dataItem.isActive">
+
+                            <input type="button" value="Activate" class="k-button" (click)="activeUser(dataItem)">
+                        </div>
+                    </ng-template>
+                </kendo-grid-column>
+            </kendo-grid>
+
+        </div>
+    </div>
+    <tsf-footer></tsf-footer>
+</div>
